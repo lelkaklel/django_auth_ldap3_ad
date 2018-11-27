@@ -296,7 +296,16 @@ class LDAP3ADBackend(object):
                     usr.dn = user_dn
 
                 # if you want to know in which business unit the user is, check it
-                if hasattr(settings, 'LDAP_STORE_BUSINESS_UNIT') \
+                if hasattr(settings, 'LDAP_STORE_BUSINESS_UNIT_AUTO') and settings.LDAP_STORE_BUSINESS_UNIT_AUTO:
+                    user_bu = 'Unknown'
+                    try:
+                        user_bu = user_dn.split(',')[1].replace('OU=', '')
+                    except:
+                        pass
+
+                    usr.bu = user_bu
+
+                elif hasattr(settings, 'LDAP_STORE_BUSINESS_UNIT') \
                         and isinstance(settings.LDAP_STORE_BUSINESS_UNIT, dict):
                     user_bu = ','.join(user_dn.split(',')[1:])
 
