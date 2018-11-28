@@ -45,6 +45,8 @@ def user_logged_in_handler(sender, request, user, **kwargs):
         request.session['LDAP_USER_DN'] = user.dn
     if 'bu' in user.__dict__ and user.bu is not None:
         request.session['LDAP_USER_BU'] = user.bu
+    if 'city' in user.__dict__ and user.city is not None:
+        request.session['LDAP_USER_CITY'] = user.city
 
 
 user_logged_in.connect(user_logged_in_handler)
@@ -156,9 +158,10 @@ class LDAP3ADBackend(object):
                 """
                 user_model.dn = lambda: None
                 user_model.bu = lambda: None
+                user_model.city = lambda: None
                 try:
                     # try to retrieve user from database and update it
-                    username_field = getattr(settings, 'LDAP_USER_MODEL_USERNAME_FIELD', 'username') 
+                    username_field = getattr(settings, 'LDAP_USER_MODEL_USERNAME_FIELD', 'username')
                     lookup_username = user_attribs[settings.LDAP_ATTRIBUTES_MAP[username_field]]
                     usr = user_model.objects.get(**{"{0}__iexact".format(username_field): lookup_username})
                 except user_model.DoesNotExist:
@@ -302,8 +305,8 @@ class LDAP3ADBackend(object):
                         user_bu = user_dn.split(',')[1].replace('OU=', '')
                     except:
                         pass
-
                     usr.bu = user_bu
+
 
                 elif hasattr(settings, 'LDAP_STORE_BUSINESS_UNIT') \
                         and isinstance(settings.LDAP_STORE_BUSINESS_UNIT, dict):
@@ -311,6 +314,16 @@ class LDAP3ADBackend(object):
 
                     if user_bu in settings.LDAP_STORE_BUSINESS_UNIT:
                         usr.bu = settings.LDAP_STORE_BUSINESS_UNIT[user_bu]
+
+                # if you want to know in which business unit the user is, check it
+                if hasattr(settings,
+                           'LDAP_STORE_CITY_AUTO') and settings.LDAP_STORE_CITY_AUTO:
+                    user_city = 'Unknown'
+                    try:
+                        user_city = list(reversed(user_dn.split(',')))[3].replace('OU=', '')
+                    except:
+                        pass
+                    usr.city = user_city
 
                 return usr
         return None
